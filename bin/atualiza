@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+
+// THIS MUST USE UNIX LINE ENDING
+
+require('../lib/atualiza.js');

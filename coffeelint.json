@@ -1,0 +1,14 @@
+{
+    "no_this": { "level": "error" },
+    "space_operators": { "level": "warn" },
+    "spacing_after_comma": { "level": "warn" },
+    "no_trailing_whitespace": { "level": "ignore" },
+    "indentation" : {
+        "level" : "error",
+        "value" : 4
+    },
+    "max_line_length": {
+        "level": "warn",
+        "value": 120
+    }
+}
