@@ -160,10 +160,11 @@ iterativeTable = (items) ->
                             selecteds[items[row].name] = if col==2 then items[row]._best else items[row]._newest
                     showTable()
                 when 'ENTER'
-                    tty.grabInput false
-                    tty.down 2 + items.length
-                    resolve selecteds
-                when 'ESCAPE', 'CTRL_C', 'Q'
+                    if Object.keys(selecteds).length
+                        tty.grabInput false
+                        tty.down 2 + items.length
+                        resolve selecteds
+                when 'ESCAPE', 'CTRL_C', 'q'
                     tty.grabInput false
                     tty.down 2 + items.length
                     resolve null
@@ -224,8 +225,9 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
 
 .then (update_info) ->
 
-
-    if update_info
+    unless update_info
+        return ''
+    else
         unless argv.global
             unless argv.safe
                 fn = path.join process.cwd(), 'package.json'
@@ -246,15 +248,19 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
             else
                 tty.yellow '\n\nRespecting your decision to NOT change your `package.json`\n'
 
-        cmd = 'npm i '
-        cmd += '-g ' if argv.global
+        if argv.global and process.platform in ['linux']
+            if process.getuid() != 0
+                tty.red '\n\nTo update global packages please call `sudo atualiza -g`!\n'
+                tty.hideCursor no
+                tty.processExit 1
+
+        cmd = if argv.global then 'sudo npm i -g ' else 'npm i '
         for own k, v of update_info then cmd += "#{k}@#{v} "
 
         tty.cyan '\n\nExecuting update...'
         tty.white '\n\nCommand: '
         tty.green '%s\n\n', cmd
 
-        ''
         execAsync cmd, {stdio: [0, 1, 2]}
 
 .then (output) ->

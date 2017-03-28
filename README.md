@@ -4,7 +4,7 @@ Atualiza is a way to check the versions of all packages you are using in your cu
 
 I know, there are other projects that does the same! But I don´t like them! So *atualiza*  is what I did to make me happy :smile:.
 
-Not that the others like [npm-check](https://www.npmjs.com/package/npm-check) are bad, they are not, but my machine is! Where *npm-check* take many minutes and all my memory to to its job, *atualiza* does it all in seconds!
+Not that the others like [npm-check](https://www.npmjs.com/package/npm-check) are bad, they are not, but my hardware is! Where *npm-check* takes many minutes and all my memory to to its job, *atualiza* does it all in seconds!
 
 ## instalation
 
