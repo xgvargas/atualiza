@@ -1,17 +1,17 @@
-path      = require 'path'
-Promise   = require 'bluebird'
-execAsync = Promise.promisify require('child_process').exec
-writeFile = Promise.promisify require('fs').writeFile
-tty       = require('terminal-kit').terminal
-semver    = require 'semver'
-Table     = require 'easy-table'
-yargs     = require('yargs')
-colors    = require 'colors'
+path        = require 'path'
+Promise     = require 'bluebird'
+execAsync   = Promise.promisify require('child_process').exec
+{writeFile} = require 'fs'
+tty         = require('terminal-kit').terminal
+semver      = require 'semver'
+Table       = require 'easy-table'
+yargs       = require('yargs')
+colors      = require 'colors'
 
 
 argv = yargs
 .version require('../package.json').version
-.usage 'Usage: $0 [options]'
+.usage 'Usage: $0 [options] [path]'
 .help 'help'
 .alias 'h', 'help'
 # .epilog 'copyright 2017'
@@ -20,23 +20,36 @@ argv = yargs
     'global': {type:'boolean', alias:'g', describe:'Work with global npm packages'}
     'all': {type:'boolean', alias:'a', describe:'List all installed packages'}
     'safe': {type:'boolean', alias:'s', describe:'Do NOT touch my package.json!'}
+    'exact': {type:'boolean', alias:'e', describe:'Use exact version instead of ^version'}
     'concurrency': {type:'number', default:8, describe:'Set the concurrencity number (1-50)'}
 .argv
 # console.dir argv
+
+if argv._.length > 1
+    yargs.showHelp()
+    tty.processExit 1
 
 unless 1 <= argv.concurrency <= 50
     yargs.showHelp()
     tty.processExit 1
 
+if argv._.length == 1
+    try
+        process.chdir argv._[0]
+    catch
+        tty.red '\nOops! Can´t change current directory to: `%s`\n', argv._[0]
+        tty.processExit 1
+
 unless argv.global
     try
         local_package = require(path.join(process.cwd(), 'package.json'))
     catch e
-        tty.red '\nOops! Cant find a `package.json` in current folder\n'
+        tty.red '\nOops! Cant find a `package.json` file at `%s`\n', process.cwd()
         tty.processExit 1
 
     dependencies = local_package.dependencies
     dependencies = Object.assign dependencies, (local_package.devDependencies || {})
+
 
 ###
 Show an iterative table populated with package versions and
@@ -205,33 +218,43 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
         tty '\n\n'
         iterativeTable if argv.all then valids else elegible
     else
-        tty.white '\nGreat!! Everything is up to date!\n'
+        tty.white '\n\nGreat!! Everything is up to date!\n'
         tty.hideCursor no
         tty.processExit 0
 
 .then (update_info) ->
 
-    console.log update_info
 
     if update_info
+        console.log update_info
 
-        # TODO save data to package.json
         unless argv.safe
             unless argv.global
                 fn = path.join process.cwd(), 'package.json'
                 pack = require fn
 
-                    # FIXME update_info eh um objecto!!!
-                update_info.forEach (i) ->
-                    if pack.dependencies[i.name]
-                        pack.dependencies[i.name] = i._installed
-                    else if pack.devDependencies[i.name]
-                        pack.devDependencies[i.name] = i._installed
+                console.log pack
 
-                writeFile fn, pack
+                for own k, v of update_info
+                    v = '^' + v unless argv.exact
+                    pack.dependencies[k] = v if pack.dependencies?[k]
+                    pack.devDependencies[k] = v if pack.devDependencies?[k]
 
-        # TODO execute NPM install
+                console.log pack
 
+                # writeFile fn, pack
+
+        cmd = 'npm i '
+        cmd += '-g ' if argv.global
+        for own k, v of update_info then cmd += "#{k}@#{v} "
+
+        tty.cyan '\n\nExecuting update...'
+        tty.white '\n\nCommand: '
+        tty.green '%s\n\n', cmd
+
+        execAsync cmd
+
+.then (output) ->
     tty.hideCursor no
     tty.processExit 0
 
