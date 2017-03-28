@@ -18,9 +18,8 @@
     "terminal-kit": "^1.0.3",
     "yargs": "^7.0.2"
   },
-  "main": "lib/atualiza.js",
   "bin": {
-    "atualiza": "./bin/cli"
+    "atualiza": "./bin/atualiza"
   },
   "repository": {
     "type": "git",
@@ -32,6 +31,10 @@
   "homepage": "https://github.com/xgvargas/atualiza#atualiza",
   "keywords": [
     "npm",
-    "update"
+    "update",
+    "updater",
+    "updating",
+    "outdated",
+    "dependencies"
   ]
 }

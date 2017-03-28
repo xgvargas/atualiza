@@ -92,20 +92,17 @@ iterativeTable = (items) ->
                 t.newRow()
 
             tty t.toString()
-            # console.log selecteds
-            tty.up 3 + items.length
+            tty.up 2 + items.length
 
         showTable()
 
         if row == -1
-            tty.down 3 + items.length
+            tty.down 2 + items.length
             return resolve null
 
         tty.grabInput yes
-        tty.hideCursor yes
 
         tty.on 'key', (name, data) ->
-            console.log  name, data
             switch name
                 when 'UP'
                     for r in [row-1..0] by -1
@@ -151,15 +148,14 @@ iterativeTable = (items) ->
                     showTable()
                 when 'ENTER'
                     tty.grabInput false
-                    tty.hideCursor no
-                    tty.down 3 + items.length
+                    tty.down 2 + items.length
                     resolve selecteds
                 when 'ESCAPE', 'CTRL_C', 'Q'
                     tty.grabInput false
-                    tty.hideCursor no
-                    tty.down 3 + items.length
+                    tty.down 2 + items.length
                     resolve null
 
+tty.hideCursor yes
 
 execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
 .then (all_packs) ->
@@ -204,40 +200,43 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
     if no_semver.length
         tty.red '\nIgnored packages (not using semver):'
         no_semver.forEach (i) -> tty '\n%s @%s', i.name, i.version
-        tty '\n\n'
 
     if elegible.length or argv.all
+        tty '\n\n'
         iterativeTable if argv.all then valids else elegible
     else
         tty.white '\nGreat!! Everything is up to date!\n'
+        tty.hideCursor no
         tty.processExit 0
 
 .then (update_info) ->
 
-    if update_info
-        console.log update_info
+    console.log update_info
 
+    if update_info
 
         # TODO save data to package.json
-        # unless argv.safe
-        #     unless argv.global
-        #         fn = path.join process.cwd(), 'package.json'
-        #         pack = require fn
+        unless argv.safe
+            unless argv.global
+                fn = path.join process.cwd(), 'package.json'
+                pack = require fn
 
                     # FIXME update_info eh um objecto!!!
-        #         update_info.forEach (i) ->
-        #             if pack.dependencies[i.name]
-        #                 pack.dependencies[i.name] = i._installed
-        #             else if pack.devDependencies[i.name]
-        #                 pack.devDependencies[i.name] = i._installed
+                update_info.forEach (i) ->
+                    if pack.dependencies[i.name]
+                        pack.dependencies[i.name] = i._installed
+                    else if pack.devDependencies[i.name]
+                        pack.devDependencies[i.name] = i._installed
 
-        #         writeFile fn, pack
+                writeFile fn, pack
 
         # TODO execute NPM install
 
+    tty.hideCursor no
     tty.processExit 0
 
 .catch (err) ->
     tty 'Oops! Some bad thing just happened.... sorry about that!'
     tty.red err
+    tty.hideCursor no
     tty.processExit 1
