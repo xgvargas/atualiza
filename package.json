@@ -18,6 +18,7 @@
     "terminal-kit": "^1.0.3",
     "yargs": "^7.0.2"
   },
+  "preferGlobal": true,
   "bin": {
     "atualiza": "./bin/atualiza"
   },

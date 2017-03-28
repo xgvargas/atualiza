@@ -238,7 +238,7 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
                     pack.dependencies[k] = v if pack.dependencies?[k]
                     pack.devDependencies[k] = v if pack.devDependencies?[k]
 
-                console.log JSON.stringify(pack, null, 2)
+                # console.log JSON.stringify(pack, null, 2)
 
                 try
                     writeFileSync fn, JSON.stringify(pack, null, 2)
