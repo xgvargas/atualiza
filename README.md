@@ -14,6 +14,8 @@ npm i -g atualiza
 
 ## usage
 
+:bangbang: Please take care your `package.json` file! *atualiza* is still WIP and there is no warant it will not damage files :bangbang:
+
 ```bash
 # this will check all packages of your project and show outdated ones
 atualiza 

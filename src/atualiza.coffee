@@ -1,3 +1,13 @@
+###!
+--- atualiza ---
+
+Released under MIT license.
+
+by Gustavo Vargas - @xgvargas - 2017
+
+Original coffe code and issues at: https://github.com/xgvargas/atualiza
+###
+
 path            = require 'path'
 Promise         = require 'bluebird'
 execAsync       = Promise.promisify require('child_process').exec
@@ -14,7 +24,7 @@ argv = yargs
 .usage 'Usage: $0 [options] [path]'
 .help 'help'
 .alias 'h', 'help'
-# .epilog 'copyright 2017'
+# .epilog ''
 .strict yes
 .options
     'global': {type:'boolean', alias:'g', describe:'Work with global npm packages'}
@@ -42,19 +52,20 @@ if argv._.length == 1
 
 unless argv.global
     try
-        local_package = require(path.join(process.cwd(), 'package.json'))
+        local_package_fn = path.join process.cwd(), 'package.json'
+        local_package = require(local_package_fn)
     catch e
         tty.red '\nOops! Cant find a `package.json` file at `%s`\n', process.cwd()
         tty.processExit 1
 
-    dependencies = local_package.dependencies
+    dependencies = Object.assign {}, local_package.dependencies
     dependencies = Object.assign dependencies, (local_package.devDependencies || {})
 
 
-###
-Show an iterative table populated with package versions and
-allows to select what version to upgrade to
-###
+#
+# Show an iterative table populated with package versions and
+# allows to select what version to upgrade to
+#
 iterativeTable = (items) ->
     new Promise (resolve, reject) ->
 
@@ -205,7 +216,7 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
 
 .then (data) ->
 
-    tty.eraseLine() # erase the progressbar
+    tty.eraseLine() # erase the progress bar
 
     no_semver = data.filter (i) -> !i._best
     valids = data.filter (i) -> i._best
@@ -230,20 +241,22 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
     else
         unless argv.global
             unless argv.safe
-                fn = path.join process.cwd(), 'package.json'
-                pack = require fn
+
+                # console.log '\n\ndependecies', dependencies
+                # console.log '\n\nupdate_info', update_info
+                # console.log '\n\nlocal_package', local_package
 
                 for own k, v of update_info
                     v = '^' + v unless argv.exact
-                    pack.dependencies[k] = v if pack.dependencies?[k]
-                    pack.devDependencies[k] = v if pack.devDependencies?[k]
+                    local_package.dependencies[k] = v if local_package.dependencies?[k]
+                    local_package.devDependencies[k] = v if local_package.devDependencies?[k]
 
-                # console.log JSON.stringify(pack, null, 2)
+                # console.log JSON.stringify(local_package, null, 2)
 
                 try
-                    writeFileSync fn, JSON.stringify(pack, null, 2)
+                    writeFileSync local_package_fn, JSON.stringify(local_package, null, 2)
                 catch err
-                    tty.red '\n\nOops! Can´t write to %s\n', fn
+                    tty.red '\n\nOops! Can´t write to %s\n', local_package_fn
                     tty err
             else
                 tty.yellow '\n\nRespecting your decision to NOT change your `package.json`\n'
