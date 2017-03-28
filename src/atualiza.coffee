@@ -1,12 +1,12 @@
-path        = require 'path'
-Promise     = require 'bluebird'
-execAsync   = Promise.promisify require('child_process').exec
-{writeFile} = require 'fs'
-tty         = require('terminal-kit').terminal
-semver      = require 'semver'
-Table       = require 'easy-table'
-yargs       = require('yargs')
-colors      = require 'colors'
+path            = require 'path'
+Promise         = require 'bluebird'
+execAsync       = Promise.promisify require('child_process').exec
+{writeFileSync} = require 'fs'
+tty             = require('terminal-kit').terminal
+semver          = require 'semver'
+Table           = require 'easy-table'
+yargs           = require('yargs')
+colors          = require 'colors'
 
 
 argv = yargs
@@ -226,23 +226,25 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
 
 
     if update_info
-        console.log update_info
-
-        unless argv.safe
-            unless argv.global
+        unless argv.global
+            unless argv.safe
                 fn = path.join process.cwd(), 'package.json'
                 pack = require fn
-
-                console.log pack
 
                 for own k, v of update_info
                     v = '^' + v unless argv.exact
                     pack.dependencies[k] = v if pack.dependencies?[k]
                     pack.devDependencies[k] = v if pack.devDependencies?[k]
 
-                console.log pack
+                console.log JSON.stringify(pack, null, 2)
 
-                # writeFile fn, pack
+                try
+                    writeFileSync fn, JSON.stringify(pack, null, 2)
+                catch err
+                    tty.red '\n\nOops! Can´t write to %s\n', fn
+                    tty err
+            else
+                tty.yellow '\n\nRespecting your decision to NOT change your `package.json`\n'
 
         cmd = 'npm i '
         cmd += '-g ' if argv.global
@@ -252,14 +254,19 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
         tty.white '\n\nCommand: '
         tty.green '%s\n\n', cmd
 
-        execAsync cmd
+        ''
+        execAsync cmd, {stdio: [0, 1, 2]}
 
 .then (output) ->
+
+    console.log output
+
     tty.hideCursor no
     tty.processExit 0
 
 .catch (err) ->
-    tty 'Oops! Some bad thing just happened.... sorry about that!'
+    tty '\n\nOops! Some bad thing just happened.... sorry about that!\n'
     tty.red err
+    tty '\n\n'
     tty.hideCursor no
     tty.processExit 1
