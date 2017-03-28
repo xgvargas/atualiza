@@ -19,6 +19,7 @@ argv = yargs
 .options
     'global': {type:'boolean', alias:'g', describe:'Work with global npm packages'}
     'all': {type:'boolean', alias:'a', describe:'List all installed packages'}
+    'safe': {type:'boolean', alias:'s', describe:'Do NOT touch my package.json!'}
     'concurrency': {type:'number', default:8, describe:'Set the concurrencity number (1-50)'}
 .argv
 # console.dir argv
@@ -48,21 +49,32 @@ iterativeTable = (items) ->
         row = -1
         selecteds = {}
 
-        format = (table, r, c, title, val, name) ->
-            if row == -1
-                if val
-                    row = r
-                    col = c
-
-            if r == row and c == col
-                val2 = colors.yellow('[ ') + val + colors.yellow(' ]')
+        getVer = (item, type) ->
+            if argv.global
+                return if semver.gt(item._newest, item.version) then item._newest else ''
             else
-                val2 = val + '  '
+                if type == 'best'
+                    return if semver.gt(item._best, item.version) then item._best else ''
+                if type == 'newest'
+                    return if semver.gt(item._newest, item._best) then item._newest else ''
 
-            if selecteds[name] == val
-                val2 = colors.bgGreen.black val2 || val
+        format = (table, r, c, title, val, name) ->
+            if row == -1 and val
+                row = r
+                col = c
 
-            table.cell title, val2
+            if selecteds[name] == val and r == row and c == col
+                val = colors.yellow('[ ') +
+                    colors.bgGreen.black(val) +
+                    colors.yellow(' ]')
+            else if r == row and c == col
+                val = colors.yellow('[ ') + val + colors.yellow(' ]')
+            else if selecteds[name] == val
+                val = '  ' + colors.bgGreen.black(val) + '  '
+            else
+                val = '  ' + val + '  '
+
+            table.cell title, val
 
         showTable = ->
             t = new Table
@@ -70,20 +82,24 @@ iterativeTable = (items) ->
                 t.cell 'Package', item.name
                 t.cell 'Current', item.version
                 if argv.global
-                    newVal = if semver.gt(item._newest, item.version) then item._newest else ''
+                    newVal = getVer item
                     format t, row, 2, 'Newest', newVal, item.name
                 else
-                    bestVal = if semver.gt(item._best, item.version) then item._best else ''
+                    bestVal = getVer item, 'best'
                     format t, row, 2, 'Best', bestVal, item.name
-                    newVal = if semver.gt(item._newest, item._best) then item._newest else ''
+                    newVal = getVer item, 'newest'
                     format t, row, 3, 'Newest', newVal, item.name
                 t.newRow()
 
             tty t.toString()
-            console.log selecteds
-            # tty.up 3 + items.length
+            # console.log selecteds
+            tty.up 3 + items.length
 
         showTable()
+
+        if row == -1
+            tty.down 3 + items.length
+            return resolve null
 
         tty.grabInput yes
         tty.hideCursor yes
@@ -92,17 +108,35 @@ iterativeTable = (items) ->
             console.log  name, data
             switch name
                 when 'UP'
-                    row--
+                    for r in [row-1..0] by -1
+                        if getVer items[r], 'best'
+                            row = r
+                            col = 2
+                            break
+                        if getVer items[r], 'newest'
+                            row = r
+                            col = 3
+                            break
                     showTable()
                 when 'DOWN'
-                    row++
+                    for r in [row+1...items.length] by 1
+                        if getVer items[r], 'best'
+                            row = r
+                            col = 2
+                            break
+                        if getVer items[r], 'newest'
+                            row = r
+                            col = 3
+                            break
                     showTable()
                 when 'LEFT'
-                    col--
-                    showTable()
+                    unless argv.global
+                        col = 2 if getVer(items[row], 'best') and getVer(items[row], 'newest')
+                        showTable()
                 when 'RIGHT'
-                    col++
-                    showTable()
+                    unless argv.global
+                        col = 3 if getVer(items[row], 'best') and getVer(items[row], 'newest')
+                        showTable()
                 when ' '
                     if argv.global
                         if selecteds[items[row].name] == items[row]._newest
@@ -118,11 +152,13 @@ iterativeTable = (items) ->
                 when 'ENTER'
                     tty.grabInput false
                     tty.hideCursor no
-                    resolve []
+                    tty.down 3 + items.length
+                    resolve selecteds
                 when 'ESCAPE', 'CTRL_C', 'Q'
                     tty.grabInput false
                     tty.hideCursor no
-                    resolve []
+                    tty.down 3 + items.length
+                    resolve null
 
 
 execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
@@ -178,20 +214,26 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
 
 .then (update_info) ->
 
-    # TODO save data to package.json
-    # unless argv.global
-    #     fn = path.join process.cwd(), 'package.json'
-    #     pack = require fn
+    if update_info
+        console.log update_info
 
-    #     update_info.forEach (i) ->
-    #         if pack.dependencies[i.name]
-    #             pack.dependencies[i.name] = i._installed
-    #         else if pack.devDependencies[i.name]
-    #             pack.devDependencies[i.name] = i._installed
 
-    #     writeFile fn, pack
+        # TODO save data to package.json
+        # unless argv.safe
+        #     unless argv.global
+        #         fn = path.join process.cwd(), 'package.json'
+        #         pack = require fn
 
-    # TODO execute NPM install
+                    # FIXME update_info eh um objecto!!!
+        #         update_info.forEach (i) ->
+        #             if pack.dependencies[i.name]
+        #                 pack.dependencies[i.name] = i._installed
+        #             else if pack.devDependencies[i.name]
+        #                 pack.devDependencies[i.name] = i._installed
+
+        #         writeFile fn, pack
+
+        # TODO execute NPM install
 
     tty.processExit 0
 

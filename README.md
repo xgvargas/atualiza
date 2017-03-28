@@ -18,10 +18,13 @@ npm i -g atualiza
 # this will check all packages of your project and show outdated ones
 atualiza 
 
-# this willl do the same check but will show all used packages and their current version
+# this will do the same check but will show all used packages and their current version
 atualiza -a
 # or
 atualiza --all
+
+# in safe mode atualiza will NOT change your package.json but will do the update on node_packages
+atualiza --safe
 
 # this will check your global packages
 atualiza -g

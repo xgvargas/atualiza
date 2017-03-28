@@ -6,7 +6,7 @@
     "prepublish": "npm run compile",
     "build": "npm run compile",
     "compile": "coffee -cbo lib src",
-    "watch": "coffee -cwbo lib src"
+    "dev": "coffee -cwbo lib src"
   },
   "author": "Gustavo Vargas <xgvargas@gmail.com>",
   "license": "MIT",
