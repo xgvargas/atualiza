@@ -254,7 +254,7 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
                 # console.log JSON.stringify(local_package, null, 2)
 
                 try
-                    writeFileSync local_package_fn, JSON.stringify(local_package, null, 2)
+                    writeFileSync local_package_fn, (JSON.stringify(local_package, null, 2) + '\n')
                 catch err
                     tty.red '\n\nOops! Can´t write to %s\n', local_package_fn
                     tty err
