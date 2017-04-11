@@ -3,9 +3,8 @@
   "version": "0.1.4",
   "description": "NPM package mantainer",
   "scripts": {
-    "prepublish": "npm run compile",
-    "build": "npm run compile",
-    "compile": "coffee -cbo lib src",
+    "prepublish": "npm run build",
+    "build": "coffee -cbo lib src",
     "dev": "coffee -cwbo lib src"
   },
   "author": "Gustavo Vargas <xgvargas@gmail.com>",
@@ -13,9 +12,9 @@
   "dependencies": {
     "bluebird": "^3.4.1",
     "colors": "^1.1.2",
-    "easy-table": "^1.0.0",
+    "easy-table": "^1.1.0",
     "semver": "^5.3.0",
-    "terminal-kit": "^1.0.3",
+    "terminal-kit": "^1.2.5",
     "yargs": "^7.0.2"
   },
   "preferGlobal": true,

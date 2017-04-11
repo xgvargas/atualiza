@@ -5,7 +5,7 @@ Released under MIT license.
 
 by Gustavo Vargas - @xgvargas - 2017
 
-Original coffe code and issues at: https://github.com/xgvargas/atualiza
+Original coffee code and issues at: https://github.com/xgvargas/atualiza
 ###
 
 path            = require 'path'
@@ -173,10 +173,14 @@ iterativeTable = (items) ->
                 when 'ENTER'
                     if Object.keys(selecteds).length
                         tty.grabInput false
+                        row = -2
+                        showTable()
                         tty.down 2 + items.length
                         resolve selecteds
                 when 'ESCAPE', 'CTRL_C', 'q'
                     tty.grabInput false
+                    row = -2
+                    showTable()
                     tty.down 2 + items.length
                     resolve null
 
