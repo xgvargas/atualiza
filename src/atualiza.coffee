@@ -10,7 +10,8 @@ Original coffee code and issues at: https://github.com/xgvargas/atualiza
 
 path            = require 'path'
 Promise         = require 'bluebird'
-execAsync       = Promise.promisify require('child_process').exec
+# execAsync       = Promise.promisify require('child_process').exec
+{exec} = require 'child_process'
 {writeFileSync} = require 'fs'
 tty             = require('terminal-kit').terminal
 semver          = require 'semver'
@@ -184,9 +185,25 @@ iterativeTable = (items) ->
                     tty.down 2 + items.length
                     resolve null
 
+execAsync = (cmd, ops) ->
+    new Promise (resolve, reject) ->
+        exec cmd, ops, (err, stdout, stderr) ->
+            if err
+                return reject {stdout: stdout, stderr: stderr}
+
+            resolve stdout
+
 tty.hideCursor yes
 
-execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
+execAsync ('npm ls --depth=0 --json' + if argv.global then ' --global' else ''), {maxBuffer: 1024 * 1000}
+.catch (error) ->
+
+    # in some cases the `npm ls` gives an error after its output, in that case we simple ignore the error
+    # and passes the output ahead like when it works...
+    # such error is usually due to semver´s missuse
+
+    error.stdout
+
 .then (all_packs) ->
     all_packs_deps = JSON.parse(all_packs).dependencies
 
@@ -207,7 +224,10 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
             if argv.global
                 item._best = item._newest
             else
+                # try
                 item._best = semver.maxSatisfying versions, dependencies[item.name]
+                # catch
+                #     item._best = '0'
 
             item
 
@@ -224,7 +244,13 @@ execAsync 'npm ls --depth=0 --json' + if argv.global then ' --global' else ''
 
     no_semver = data.filter (i) -> !i._best
     valids = data.filter (i) -> i._best
-    elegible = valids.filter (i) -> semver.gt(i._best, i.version) or semver.gt(i._newest, i.version)
+    elegible = valids.filter (i) ->
+        try
+            semver.gt(i._best, i.version) or semver.gt(i._newest, i.version)
+        catch
+            no_semver.push i
+            valids.splice valids.indexOf(i), 1
+            false
 
     if no_semver.length
         tty.red '\nIgnored packages (not using semver):'

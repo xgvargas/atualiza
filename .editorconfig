@@ -14,5 +14,5 @@ trim_trailing_whitespace = false
 [*.html]
 indent_size = 2
 
-[*.jade]
+[*.pug]
 indent_size = 2
